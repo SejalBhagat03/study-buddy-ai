@@ -1,10 +1,13 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
+import { YouTubeVideoForm } from "@/components/YouTubeVideoForm";
 import { useChat } from "@/hooks/useChat";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trash2, BookOpen, Lightbulb } from "lucide-react";
+import { Trash2, BookOpen, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 
 const sampleQuestions = [
   "What is the law of supply and demand?",
@@ -14,21 +17,51 @@ const sampleQuestions = [
 ];
 
 export default function Chat() {
+  const { user } = useAuth();
+  const [studyContent, setStudyContent] = useState("");
+  const [showYouTube, setShowYouTube] = useState(false);
+
+  // Fetch videos on mount to include in study content
+  useEffect(() => {
+    const fetchContent = async () => {
+      if (!user) return;
+
+      let content = `
+      Economics is a social science that studies how people interact with value, particularly the production, distribution, and consumption of goods and services.
+      
+      Key concepts include:
+      - Supply and Demand: The relationship between the availability of a product and the desire for it
+      - GDP (Gross Domestic Product): Total value of goods and services produced in a country
+      - Inflation: The rate at which prices increase over time
+      - Market Equilibrium: The point where supply equals demand
+      - Opportunity Cost: The value of the next best alternative foregone
+      
+      Microeconomics focuses on individual agents and markets.
+      Macroeconomics studies the economy as a whole.
+      `;
+
+      // Fetch user's videos
+      const { data: videos } = await supabase
+        .from("videos")
+        .select("title, transcript")
+        .eq("user_id", user.id);
+
+      if (videos && videos.length > 0) {
+        content += "\n\nADDITIONAL VIDEO CONTENT:\n";
+        videos.forEach((video) => {
+          content += `\n--- ${video.title} ---\n${video.transcript}\n`;
+        });
+      }
+
+      setStudyContent(content);
+    };
+
+    fetchContent();
+  }, [user]);
+
   const { messages, isLoading, sendMessage, clearMessages } = useChat({
     mode: "chat",
-    studyContent: `
-    Economics is a social science that studies how people interact with value, particularly the production, distribution, and consumption of goods and services.
-    
-    Key concepts include:
-    - Supply and Demand: The relationship between the availability of a product and the desire for it
-    - GDP (Gross Domestic Product): Total value of goods and services produced in a country
-    - Inflation: The rate at which prices increase over time
-    - Market Equilibrium: The point where supply equals demand
-    - Opportunity Cost: The value of the next best alternative foregone
-    
-    Microeconomics focuses on individual agents and markets.
-    Macroeconomics studies the economy as a whole.
-    `,
+    studyContent,
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,6 +69,27 @@ export default function Chat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleVideoAdded = async () => {
+    // Refetch content when a video is added
+    if (!user) return;
+    
+    const { data: videos } = await supabase
+      .from("videos")
+      .select("title, transcript")
+      .eq("user_id", user.id);
+
+    let content = studyContent.split("\n\nADDITIONAL VIDEO CONTENT:")[0];
+    
+    if (videos && videos.length > 0) {
+      content += "\n\nADDITIONAL VIDEO CONTENT:\n";
+      videos.forEach((video) => {
+        content += `\n--- ${video.title} ---\n${video.transcript}\n`;
+      });
+    }
+
+    setStudyContent(content);
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -56,18 +110,39 @@ export default function Chat() {
                 </p>
               </div>
             </div>
-            {messages.length > 0 && (
+            <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={clearMessages}
-                className="text-muted-foreground hover:text-destructive"
+                onClick={() => setShowYouTube(!showYouTube)}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear chat
+                {showYouTube ? (
+                  <ChevronUp className="w-4 h-4 mr-1" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 mr-1" />
+                )}
+                Add Video
               </Button>
-            )}
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearMessages}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* YouTube Form */}
+          {showYouTube && (
+            <div className="max-w-4xl mx-auto mt-4 p-4 bg-card rounded-xl border border-border">
+              <YouTubeVideoForm onSuccess={handleVideoAdded} />
+            </div>
+          )}
         </header>
 
         {/* Messages */}
