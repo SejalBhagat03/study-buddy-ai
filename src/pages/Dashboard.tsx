@@ -1,14 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
+import { ProgressTracker } from "@/components/ProgressTracker";
 import {
   MessageCircle,
   GraduationCap,
   FileText,
   Sparkles,
-  TrendingUp,
-  Clock,
-  BookOpen,
   ArrowRight,
 } from "lucide-react";
 
@@ -36,12 +34,6 @@ const features = [
   },
 ];
 
-const quickStats = [
-  { icon: BookOpen, label: "Chapters", value: "3" },
-  { icon: Clock, label: "Study Time", value: "2.5h" },
-  { icon: TrendingUp, label: "Progress", value: "65%" },
-];
-
 export default function Dashboard() {
   const navigate = useNavigate();
 
@@ -65,51 +57,38 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {quickStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-card rounded-xl p-4 border border-border shadow-soft"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <stat.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {features.map((feature) => (
-              <button
-                key={feature.title}
-                onClick={() => navigate(feature.path)}
-                className="group bg-card rounded-2xl p-6 border border-border shadow-soft hover:shadow-elevated transition-all duration-300 text-left hover:-translate-y-1"
-              >
-                <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            {/* Feature Cards */}
+            <div className="lg:col-span-2 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {features.map((feature) => (
+                <button
+                  key={feature.title}
+                  onClick={() => navigate(feature.path)}
+                  className="group bg-card rounded-2xl p-5 border border-border shadow-soft hover:shadow-elevated transition-all duration-300 text-left hover:-translate-y-1"
                 >
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {feature.description}
-                </p>
-                <div className="flex items-center text-primary text-sm font-medium">
-                  Get started
-                  <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-            ))}
+                  <div
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+                  >
+                    <feature.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground mb-1">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {feature.description}
+                  </p>
+                  <div className="flex items-center text-primary text-sm font-medium">
+                    Start
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Progress Tracker */}
+            <div className="lg:col-span-1">
+              <ProgressTracker />
+            </div>
           </div>
 
           {/* Getting Started */}
