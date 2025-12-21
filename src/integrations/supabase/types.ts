@@ -144,6 +144,50 @@ export type Database = {
         }
         Relationships: []
       }
+      quizzes: {
+        Row: {
+          chapter_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          questions: Json
+          score: number | null
+          title: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          questions: Json
+          score?: number | null
+          title: string
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          questions?: Json
+          score?: number | null
+          title?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           chapter_id: string | null
