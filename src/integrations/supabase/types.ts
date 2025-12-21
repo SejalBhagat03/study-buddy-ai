@@ -117,6 +117,91 @@ export type Database = {
           },
         ]
       }
+      flashcards: {
+        Row: {
+          back: string
+          chapter_id: string | null
+          created_at: string
+          deck_name: string
+          difficulty: number
+          front: string
+          id: string
+          next_review: string
+          review_count: number
+          user_id: string
+        }
+        Insert: {
+          back: string
+          chapter_id?: string | null
+          created_at?: string
+          deck_name: string
+          difficulty?: number
+          front: string
+          id?: string
+          next_review?: string
+          review_count?: number
+          user_id: string
+        }
+        Update: {
+          back?: string
+          chapter_id?: string | null
+          created_at?: string
+          deck_name?: string
+          difficulty?: number
+          front?: string
+          id?: string
+          next_review?: string
+          review_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          chapter_id: string | null
+          content: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
