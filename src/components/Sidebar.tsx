@@ -8,6 +8,7 @@ import {
   MessageCircle,
   GraduationCap,
   FileText,
+  HelpCircle,
   Settings,
   LogOut,
   Menu,
@@ -21,6 +22,7 @@ const navItems = [
   { icon: MessageCircle, label: "Study Chat", path: "/chat" },
   { icon: GraduationCap, label: "Teacher Mode", path: "/teacher" },
   { icon: FileText, label: "Summaries", path: "/summaries" },
+  { icon: HelpCircle, label: "Practice Quiz", path: "/quiz" },
 ];
 
 export function Sidebar() {

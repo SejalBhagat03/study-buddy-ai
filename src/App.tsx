@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Teacher from "./pages/Teacher";
 import Summaries from "./pages/Summaries";
+import Quiz from "./pages/Quiz";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Summaries />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quiz"
+        element={
+          <ProtectedRoute>
+            <Quiz />
           </ProtectedRoute>
         }
       />

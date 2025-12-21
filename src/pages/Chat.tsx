@@ -3,11 +3,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { YouTubeVideoForm } from "@/components/YouTubeVideoForm";
+import { PDFUpload } from "@/components/PDFUpload";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trash2, BookOpen, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, BookOpen, Lightbulb, ChevronDown, ChevronUp, FileText, Video } from "lucide-react";
 
 const sampleQuestions = [
   "What is the law of supply and demand?",
@@ -20,6 +21,7 @@ export default function Chat() {
   const { user } = useAuth();
   const [studyContent, setStudyContent] = useState("");
   const [showYouTube, setShowYouTube] = useState(false);
+  const [showPDF, setShowPDF] = useState(false);
 
   // Fetch videos on mount to include in study content
   useEffect(() => {
@@ -91,6 +93,14 @@ export default function Chat() {
     setStudyContent(content);
   };
 
+  const handlePDFUploaded = async (chapterId: string, pdfContent: string) => {
+    // Add PDF content to study material
+    let content = studyContent;
+    content += `\n\nUPLOADED PDF CONTENT:\n${pdfContent}`;
+    setStudyContent(content);
+    setShowPDF(false);
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -114,14 +124,24 @@ export default function Chat() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowYouTube(!showYouTube)}
+                onClick={() => {
+                  setShowPDF(!showPDF);
+                  setShowYouTube(false);
+                }}
               >
-                {showYouTube ? (
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                )}
-                Add Video
+                <FileText className="w-4 h-4 mr-1" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowYouTube(!showYouTube);
+                  setShowPDF(false);
+                }}
+              >
+                <Video className="w-4 h-4 mr-1" />
+                Video
               </Button>
               {messages.length > 0 && (
                 <Button
@@ -136,6 +156,13 @@ export default function Chat() {
               )}
             </div>
           </div>
+
+          {/* PDF Upload Form */}
+          {showPDF && (
+            <div className="max-w-4xl mx-auto mt-4">
+              <PDFUpload onUploadComplete={handlePDFUploaded} />
+            </div>
+          )}
 
           {/* YouTube Form */}
           {showYouTube && (
