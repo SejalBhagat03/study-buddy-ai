@@ -9,6 +9,8 @@ import {
   GraduationCap,
   FileText,
   HelpCircle,
+  StickyNote,
+  Layers,
   Settings,
   LogOut,
   Menu,
@@ -23,6 +25,8 @@ const navItems = [
   { icon: GraduationCap, label: "Teacher Mode", path: "/teacher" },
   { icon: FileText, label: "Summaries", path: "/summaries" },
   { icon: HelpCircle, label: "Practice Quiz", path: "/quiz" },
+  { icon: Layers, label: "Flashcards", path: "/flashcards" },
+  { icon: StickyNote, label: "Notes", path: "/notes" },
 ];
 
 export function Sidebar() {
