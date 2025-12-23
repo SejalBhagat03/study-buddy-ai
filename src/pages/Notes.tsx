@@ -11,9 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters } from "@/hooks/useChapters";
+import { useExport } from "@/hooks/useExport";
 import { toast } from "sonner";
 import { 
   StickyNote, 
@@ -22,7 +29,8 @@ import {
   Edit2, 
   Save, 
   X,
-  Loader2 
+  Loader2,
+  Download
 } from "lucide-react";
 
 interface Note {
@@ -37,6 +45,7 @@ interface Note {
 export default function Notes() {
   const { user } = useAuth();
   const { chapters } = useChapters();
+  const { exportNotesAsMarkdown, exportNotesAsHTML } = useExport();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -151,17 +160,50 @@ export default function Notes() {
     return chapters.find((c) => c.id === chapterId)?.title;
   };
 
+  const handleExport = (format: "markdown" | "html") => {
+    const exportData = notes.map((note) => ({
+      title: note.title,
+      content: note.content,
+      chapter: getChapterTitle(note.chapter_id) || undefined,
+      updated_at: note.updated_at,
+    }));
+    
+    if (format === "markdown") {
+      exportNotesAsMarkdown(exportData);
+    } else {
+      exportNotesAsHTML(exportData);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 pt-16 lg:pt-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Study Notes</h1>
-            <Button onClick={() => setShowNewNote(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Note
-            </Button>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={notes.length === 0}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleExport("markdown")}>
+                    Export as Markdown
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport("html")}>
+                    Export as HTML (PDF)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button onClick={() => setShowNewNote(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Note
+              </Button>
+            </div>
           </div>
 
           {/* New Note Form */}

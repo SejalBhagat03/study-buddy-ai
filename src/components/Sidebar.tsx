@@ -11,6 +11,7 @@ import {
   HelpCircle,
   StickyNote,
   Layers,
+  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -27,6 +28,7 @@ const navItems = [
   { icon: HelpCircle, label: "Practice Quiz", path: "/quiz" },
   { icon: Layers, label: "Flashcards", path: "/flashcards" },
   { icon: StickyNote, label: "Notes", path: "/notes" },
+  { icon: BarChart3, label: "Analytics", path: "/analytics" },
 ];
 
 export function Sidebar() {
