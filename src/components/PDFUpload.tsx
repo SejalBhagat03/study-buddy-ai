@@ -6,6 +6,10 @@ import { Upload, FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Set the worker source
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PDFUploadProps {
   onUploadComplete?: (chapterId: string, content: string) => void;
@@ -30,31 +34,36 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    // Use a simple text extraction approach
-    // For production, you'd want to use a proper PDF parsing library or edge function
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    // Basic PDF text extraction - looks for text between stream markers
-    let text = "";
-    const decoder = new TextDecoder("utf-8", { fatal: false });
-    const content = decoder.decode(uint8Array);
-    
-    // Extract readable text patterns from PDF
-    const textMatches = content.match(/\(([^)]+)\)/g);
-    if (textMatches) {
-      text = textMatches
-        .map(match => match.slice(1, -1))
-        .filter(t => t.length > 2 && /[a-zA-Z]/.test(t))
-        .join(" ");
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = "";
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+        fullText += pageText + "\n\n";
+      }
+      
+      // Clean up the text
+      fullText = fullText
+        .replace(/\s+/g, " ")
+        .replace(/\n\s*\n/g, "\n\n")
+        .trim();
+      
+      if (fullText.length < 50) {
+        return `PDF Content from: ${file.name}\n\nThis PDF contains study material that has been uploaded. The content may be image-based or scanned. You can still ask questions about the topic.`;
+      }
+      
+      return fullText;
+    } catch (error) {
+      console.error("PDF extraction error:", error);
+      return `PDF Content from: ${file.name}\n\nThis PDF has been uploaded for study. You can ask questions about the topic mentioned in the title.`;
     }
-    
-    // If basic extraction fails, return a placeholder message
-    if (text.length < 100) {
-      return `PDF Content from: ${file.name}\n\nThis PDF contains study material that has been uploaded for analysis. The AI will help you understand and study this content.`;
-    }
-    
-    return text;
   };
 
   const handleUpload = async () => {
@@ -65,7 +74,7 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
 
     setIsUploading(true);
     try {
-      // Extract text from PDF
+      // Extract text from PDF first
       const extractedText = await extractTextFromPDF(file);
 
       // Upload PDF to storage
@@ -93,12 +102,16 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
       setFile(null);
       setTitle("");
       
+      // Reset file input
+      const fileInput = document.getElementById("pdf-file") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+      
       if (onUploadComplete && chapter) {
         onUploadComplete(chapter.id, extractedText);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload PDF");
+      toast.error("Failed to upload PDF. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -148,7 +161,7 @@ export function PDFUpload({ onUploadComplete }: PDFUploadProps) {
           {isUploading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Uploading...
+              Processing PDF...
             </>
           ) : (
             <>
