@@ -13,6 +13,7 @@ import Summaries from "./pages/Summaries";
 import Quiz from "./pages/Quiz";
 import Notes from "./pages/Notes";
 import Flashcards from "./pages/Flashcards";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +94,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Flashcards />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <Analytics />
           </ProtectedRoute>
         }
       />

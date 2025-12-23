@@ -4,9 +4,16 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters } from "@/hooks/useChapters";
+import { useExport } from "@/hooks/useExport";
 import { toast } from "sonner";
 import { 
   Layers, 
@@ -17,7 +24,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Sparkles,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,8 +43,8 @@ interface Flashcard {
 export default function Flashcards() {
   const { user } = useAuth();
   const { chapters, loading: chaptersLoading } = useChapters();
+  const { exportFlashcardsAsMarkdown, exportFlashcardsAsHTML } = useExport();
   const navigate = useNavigate();
-  
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -204,6 +212,20 @@ export default function Flashcards() {
     ? ((currentIndex + 1) / studyCards.length) * 100 
     : 0;
 
+  const handleExport = (format: "markdown" | "html") => {
+    const exportData = flashcards.map((card) => ({
+      front: card.front,
+      back: card.back,
+      deck_name: card.deck_name,
+    }));
+    
+    if (format === "markdown") {
+      exportFlashcardsAsMarkdown(exportData);
+    } else {
+      exportFlashcardsAsHTML(exportData);
+    }
+  };
+
   if (studyMode && studyCards.length > 0) {
     const currentCard = studyCards[currentIndex];
     
@@ -295,9 +317,27 @@ export default function Flashcards() {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 pt-16 lg:pt-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Flashcards</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold">Flashcards</h1>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={flashcards.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport("markdown")}>
+                  Export as Markdown
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("html")}>
+                  Export as HTML (PDF)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Generate New Deck */}
           <Card className="mb-6">
