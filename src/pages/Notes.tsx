@@ -226,14 +226,14 @@ export default function Notes() {
                 <Select
                   value={newNote.chapter_id}
                   onValueChange={(value) =>
-                    setNewNote((prev) => ({ ...prev, chapter_id: value }))
+                    setNewNote((prev) => ({ ...prev, chapter_id: value === "none" ? "" : value }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Link to chapter (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No chapter</SelectItem>
+                    <SelectItem value="none">No chapter</SelectItem>
                     {chapters.map((chapter) => (
                       <SelectItem key={chapter.id} value={chapter.id}>
                         {chapter.title}
