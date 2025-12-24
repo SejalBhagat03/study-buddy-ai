@@ -8,8 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
 
-// Set the worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set the worker source for pdfjs-dist v3.x
+pdfjsLib.GlobalWorkerOptions.workerSrc = "//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 interface PDFUploadProps {
   onUploadComplete?: (chapterId: string, content: string) => void;
