@@ -168,16 +168,7 @@ serve(async (req) => {
       }
     }
 
-    if (!transcript) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Could not fetch transcript. This video likely has captions disabled and no auto-generated captions are available.",
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    // Return success even without transcript - let client decide how to handle
     return new Response(
       JSON.stringify({
         success: true,

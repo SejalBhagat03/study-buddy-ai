@@ -1,7 +1,7 @@
-import { forwardRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Youtube, Loader2, CheckCircle2 } from "lucide-react";
+import { Youtube, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -11,14 +11,25 @@ interface YouTubeVideoFormProps {
   onSuccess?: () => void;
 }
 
-export const YouTubeVideoForm = forwardRef<HTMLFormElement, YouTubeVideoFormProps>(function YouTubeVideoForm(
-  { chapterId, onSuccess },
-  ref
-) {
+// Helper to extract video ID
+function extractVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+export function YouTubeVideoForm({ chapterId, onSuccess }: YouTubeVideoFormProps) {
   const { user } = useAuth();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [savedWithoutTranscript, setSavedWithoutTranscript] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,37 +37,73 @@ export const YouTubeVideoForm = forwardRef<HTMLFormElement, YouTubeVideoFormProp
 
     setLoading(true);
     setSuccess(false);
+    setSavedWithoutTranscript(false);
+
+    const videoId = extractVideoId(url.trim());
+    if (!videoId) {
+      toast.error("Invalid YouTube URL");
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("youtube-transcript", {
         body: { videoUrl: url },
       });
 
-      if (fnError) {
-        throw new Error(fnError.message);
+      let title = `YouTube Video ${videoId}`;
+      let transcript = "";
+      let hasTranscript = false;
+
+      if (!fnError && data && !(data as any).error) {
+        title = (data as any).title || title;
+        transcript = (data as any).transcript || "";
+        hasTranscript = !!transcript;
       }
 
-      if (!data || (data as any).error) {
-        throw new Error((data as any)?.error || "Failed to fetch transcript");
+      // If no transcript, fetch title via oembed and save without transcript
+      if (!hasTranscript) {
+        try {
+          const oembedRes = await fetch(
+            `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+          );
+          if (oembedRes.ok) {
+            const oembedData = await oembedRes.json();
+            title = oembedData.title || title;
+          }
+        } catch {
+          // ignore
+        }
+        transcript = "[No captions available for this video]";
       }
 
       // Save to database
       const { error: dbError } = await supabase.from("videos").insert({
         user_id: user.id,
         chapter_id: chapterId || null,
-        title: data.title,
-        transcript: data.transcript,
-        video_url: `https://www.youtube.com/watch?v=${data.videoId}`,
+        title,
+        transcript,
+        video_url: `https://www.youtube.com/watch?v=${videoId}`,
       });
 
       if (dbError) throw dbError;
 
       setSuccess(true);
       setUrl("");
-      toast.success("Video transcript added successfully!");
+
+      if (hasTranscript) {
+        toast.success("Video transcript added successfully!");
+      } else {
+        setSavedWithoutTranscript(true);
+        toast.warning("Video saved, but no captions were found. The AI won't be able to use this video's content.");
+      }
+
       onSuccess?.();
 
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => {
+        setSuccess(false);
+        setSavedWithoutTranscript(false);
+      }, 5000);
     } catch (error) {
       console.error("Error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to add video");
@@ -66,7 +113,7 @@ export const YouTubeVideoForm = forwardRef<HTMLFormElement, YouTubeVideoFormProp
   };
 
   return (
-    <form ref={ref} onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <Youtube className="w-4 h-4 text-red-500" />
         Add YouTube Video
@@ -84,15 +131,25 @@ export const YouTubeVideoForm = forwardRef<HTMLFormElement, YouTubeVideoFormProp
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : success ? (
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            savedWithoutTranscript ? (
+              <AlertTriangle className="w-4 h-4 text-yellow-500" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            )
           ) : (
             "Add"
           )}
         </Button>
       </div>
+      {savedWithoutTranscript && (
+        <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          Video saved without transcript - no captions found
+        </p>
+      )}
       <p className="text-xs text-muted-foreground">
         Add related YouTube videos to enhance AI learning
       </p>
     </form>
   );
-});
+}
