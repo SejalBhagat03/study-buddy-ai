@@ -3,12 +3,13 @@ import { Sidebar } from "@/components/Sidebar";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { YouTubeVideoForm } from "@/components/YouTubeVideoForm";
+import { YouTubeVideosList } from "@/components/YouTubeVideosList";
 import { PDFUpload } from "@/components/PDFUpload";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trash2, BookOpen, Lightbulb, ChevronDown, ChevronUp, FileText, Video } from "lucide-react";
+import { Trash2, BookOpen, Lightbulb, FileText, Video } from "lucide-react";
 
 const sampleQuestions = [
   "What is the law of supply and demand?",
@@ -166,8 +167,9 @@ export default function Chat() {
 
           {/* YouTube Form */}
           {showYouTube && (
-            <div className="max-w-4xl mx-auto mt-4 p-4 bg-card rounded-xl border border-border">
+            <div className="max-w-4xl mx-auto mt-4 p-4 bg-card rounded-xl border border-border space-y-4">
               <YouTubeVideoForm onSuccess={handleVideoAdded} />
+              <YouTubeVideosList onUpdate={handleVideoAdded} />
             </div>
           )}
         </header>
