@@ -16,6 +16,10 @@ export function useChat(options: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Use a ref to always have the latest studyContent
+  const studyContentRef = { current: options.studyContent || "" };
+  studyContentRef.current = options.studyContent || "";
+
   const sendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -42,6 +46,10 @@ export function useChat(options: UseChatOptions = {}) {
         content: m.content,
       }));
 
+      // Always use the latest studyContent from the ref
+      const currentStudyContent = studyContentRef.current;
+      console.log("Sending study content length:", currentStudyContent.length);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
         {
@@ -52,7 +60,7 @@ export function useChat(options: UseChatOptions = {}) {
           },
           body: JSON.stringify({
             messages: chatMessages,
-            studyContent: options.studyContent || "",
+            studyContent: currentStudyContent,
             mode: options.mode || "chat",
           }),
         }
@@ -126,7 +134,7 @@ export function useChat(options: UseChatOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, options.mode, options.studyContent]);
+  }, [messages, options.mode]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
