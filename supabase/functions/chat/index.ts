@@ -21,8 +21,11 @@ serve(async (req) => {
     // Build system prompt based on mode
     let systemPrompt = "";
     
+    // Better formatting for study content
+    const formattedContent = studyContent || "No specific content provided.";
+    
     if (mode === "teacher") {
-      systemPrompt = `You are a friendly, patient Economics teacher named "Professor Study". Your role is to:
+      systemPrompt = `You are a friendly, patient teacher named "Professor Study". Your role is to:
 - Explain concepts in simple, student-friendly language
 - Use analogies and real-world examples
 - Break down complex topics step-by-step
@@ -30,12 +33,13 @@ serve(async (req) => {
 - Encourage students and praise their questions
 - Ask follow-up questions to check understanding
 
-IMPORTANT: You must ONLY answer based on the following study materials provided. If asked about something not in the materials, politely say you can only help with the provided content.
+IMPORTANT: You have access to the following study materials including uploaded PDFs and YouTube video transcripts. Use this content to answer questions accurately.
 
-STUDY MATERIALS:
-${studyContent || "No specific content provided. Please answer general economics questions clearly."}
+=== STUDY MATERIALS ===
+${formattedContent}
+=== END MATERIALS ===
 
-Keep responses concise but thorough. Use bullet points for lists. End with a question or encouragement when appropriate.`;
+Keep responses concise but thorough. Use bullet points for lists. When answering, reference the specific content from videos or documents when relevant.`;
     } else if (mode === "summary") {
       systemPrompt = `You are an expert at creating study summaries. Based on the provided content, create:
 1. A brief overview (2-3 sentences)
@@ -43,17 +47,23 @@ Keep responses concise but thorough. Use bullet points for lists. End with a que
 3. Important definitions
 4. Exam tips and common question patterns
 
-STUDY MATERIALS:
-${studyContent || "No content provided."}
+=== STUDY MATERIALS ===
+${formattedContent}
+=== END MATERIALS ===
 
 Format your response clearly with headers and bullet points.`;
     } else {
-      systemPrompt = `You are a helpful study assistant. Answer questions based ONLY on the provided study materials. Be clear, concise, and exam-focused.
+      systemPrompt = `You are a helpful study assistant. You have access to the following study materials including uploaded PDFs and YouTube video transcripts. Use this content to answer questions accurately.
 
-STUDY MATERIALS:
-${studyContent || "No specific content provided. Please answer clearly and helpfully."}
+=== STUDY MATERIALS ===
+${formattedContent}
+=== END MATERIALS ===
 
-If the question is outside the provided materials, politely redirect to the available content.`;
+When answering:
+- Reference specific content from the materials when relevant
+- If a video transcript is available, use information from it
+- Be clear, concise, and exam-focused
+- If asked about something not in the materials, you can still help but mention it's general knowledge`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
