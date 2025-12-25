@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Youtube, Loader2, CheckCircle2 } from "lucide-react";
@@ -11,7 +11,10 @@ interface YouTubeVideoFormProps {
   onSuccess?: () => void;
 }
 
-export function YouTubeVideoForm({ chapterId, onSuccess }: YouTubeVideoFormProps) {
+export const YouTubeVideoForm = forwardRef<HTMLFormElement, YouTubeVideoFormProps>(function YouTubeVideoForm(
+  { chapterId, onSuccess },
+  ref
+) {
   const { user } = useAuth();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,23 +28,16 @@ export function YouTubeVideoForm({ chapterId, onSuccess }: YouTubeVideoFormProps
     setSuccess(false);
 
     try {
-      // Call the edge function to fetch transcript
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/youtube-transcript`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ videoUrl: url }),
-        }
-      );
+      const { data, error: fnError } = await supabase.functions.invoke("youtube-transcript", {
+        body: { videoUrl: url },
+      });
 
-      const data = await response.json();
+      if (fnError) {
+        throw new Error(fnError.message);
+      }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch transcript");
+      if (!data || (data as any).error) {
+        throw new Error((data as any)?.error || "Failed to fetch transcript");
       }
 
       // Save to database
@@ -70,7 +66,7 @@ export function YouTubeVideoForm({ chapterId, onSuccess }: YouTubeVideoFormProps
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form ref={ref} onSubmit={handleSubmit} className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <Youtube className="w-4 h-4 text-red-500" />
         Add YouTube Video
@@ -99,4 +95,4 @@ export function YouTubeVideoForm({ chapterId, onSuccess }: YouTubeVideoFormProps
       </p>
     </form>
   );
-}
+});
