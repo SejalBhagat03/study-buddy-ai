@@ -7,7 +7,7 @@ const corsHeaders = {
 
 function extractVideoId(url: string): string | null {
   const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
     /^([a-zA-Z0-9_-]{11})$/,
   ];
 
@@ -66,43 +66,99 @@ function parseJson3Transcript(json: any): string {
   }
 }
 
-async function fetchTranscript(videoId: string): Promise<string> {
+// Try multiple user agents to avoid blocks
+const userAgents = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+];
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
+  let lastError;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          "User-Agent": userAgents[i % userAgents.length],
+        },
+      });
+      if (response.ok) return response;
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (e) {
+      lastError = e;
+      console.log(`Attempt ${i + 1} failed:`, e);
+    }
+    // Small delay before retry
+    await new Promise(r => setTimeout(r, 500));
+  }
+  throw lastError;
+}
+
+async function fetchTranscript(videoId: string): Promise<{ transcript: string; language: string }> {
   console.log("Fetching transcript for video:", videoId);
   
-  // Step 1: Fetch the watch page to get caption tracks
+  // Step 1: Fetch the watch page with multiple headers to appear more like a browser
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const watchRes = await fetch(watchUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    },
-  });
-
-  if (!watchRes.ok) {
-    console.log("Failed to fetch watch page:", watchRes.status);
-    return "";
-  }
-
-  const html = await watchRes.text();
-  console.log("Watch page fetched, length:", html.length);
-
-  // Step 2: Extract ytInitialPlayerResponse
-  const playerResponseMatch = html.match(
-    /ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:\s*var|<\/script>|\s*if)/
-  );
-
-  if (!playerResponseMatch) {
-    console.log("Could not find ytInitialPlayerResponse");
-    return "";
-  }
-
-  let playerResponse: any;
+  
+  let html = "";
   try {
-    playerResponse = JSON.parse(playerResponseMatch[1]);
+    const watchRes = await fetchWithRetry(watchUrl, {
+      headers: {
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Referer": "https://www.google.com/",
+        "DNT": "1",
+      },
+    });
+    html = await watchRes.text();
+    console.log("Watch page fetched, length:", html.length);
   } catch (e) {
-    console.log("Failed to parse ytInitialPlayerResponse:", e);
-    return "";
+    console.log("Failed to fetch watch page:", e);
+    return { transcript: "", language: "" };
+  }
+
+  // Step 2: Extract ytInitialPlayerResponse - try multiple patterns
+  let playerResponse: any = null;
+  
+  const patterns = [
+    /ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:\s*var|<\/script>|\s*if|\s*const)/s,
+    /var ytInitialPlayerResponse\s*=\s*(\{.+?\});/s,
+    /"playerResponse":\s*(\{.+?\})\s*,\s*"(?:videoDetails|playabilityStatus)"/s,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) {
+      try {
+        playerResponse = JSON.parse(match[1]);
+        console.log("Parsed player response with pattern");
+        break;
+      } catch (e) {
+        console.log("Parse failed for pattern, trying next");
+      }
+    }
+  }
+
+  if (!playerResponse) {
+    // Try extracting from embedded player config
+    const configMatch = html.match(/ytcfg\.set\s*\(\s*(\{.+?\})\s*\)/s);
+    if (configMatch) {
+      try {
+        const config = JSON.parse(configMatch[1]);
+        if (config.PLAYER_VARS?.embedded_player_response) {
+          playerResponse = JSON.parse(config.PLAYER_VARS.embedded_player_response);
+        }
+      } catch (e) {
+        console.log("Embedded config parse failed");
+      }
+    }
+  }
+
+  if (!playerResponse) {
+    console.log("Could not find ytInitialPlayerResponse");
+    return { transcript: "", language: "" };
   }
 
   // Step 3: Extract caption tracks
@@ -110,36 +166,54 @@ async function fetchTranscript(videoId: string): Promise<string> {
 
   if (!captionTracks || captionTracks.length === 0) {
     console.log("No caption tracks found in player response");
-    return "";
+    // Check if captions are disabled
+    const reason = playerResponse?.captions?.playerCaptionsTracklistRenderer?.reason;
+    if (reason) {
+      console.log("Caption unavailable reason:", reason);
+    }
+    return { transcript: "", language: "" };
   }
 
   console.log("Found", captionTracks.length, "caption tracks");
+  console.log("Available languages:", captionTracks.map((t: any) => t.languageCode).join(", "));
 
-  // Step 4: Find the best caption track (prefer English, then any)
-  let selectedTrack = captionTracks.find((t: any) => 
-    t.languageCode === "en" || 
-    t.languageCode?.startsWith("en-")
+  // Step 4: Find the best caption track - prioritize manual captions over auto-generated
+  let selectedTrack = null;
+  let selectedLanguage = "";
+
+  // First try: English manual captions
+  selectedTrack = captionTracks.find((t: any) => 
+    (t.languageCode === "en" || t.languageCode?.startsWith("en-")) &&
+    t.kind !== "asr"
   );
   
+  // Second try: Any English (including auto-generated)
   if (!selectedTrack) {
-    // Try auto-generated English
     selectedTrack = captionTracks.find((t: any) => 
+      t.languageCode === "en" || 
+      t.languageCode?.startsWith("en-") ||
       t.vssId?.includes(".en") || 
       t.vssId?.includes("a.en")
     );
   }
   
+  // Third try: Any non-auto captions
   if (!selectedTrack) {
-    // Use first available
+    selectedTrack = captionTracks.find((t: any) => t.kind !== "asr");
+  }
+  
+  // Fourth try: Any available captions
+  if (!selectedTrack) {
     selectedTrack = captionTracks[0];
   }
 
-  console.log("Selected track:", selectedTrack?.languageCode, selectedTrack?.vssId);
+  selectedLanguage = selectedTrack?.languageCode || selectedTrack?.name?.simpleText || "unknown";
+  console.log("Selected track:", selectedLanguage, selectedTrack?.vssId, "kind:", selectedTrack?.kind);
 
   const baseUrl = selectedTrack?.baseUrl;
   if (!baseUrl) {
     console.log("No baseUrl in selected track");
-    return "";
+    return { transcript: "", language: "" };
   }
 
   // Step 5: Fetch transcript in JSON3 format (more reliable)
@@ -147,19 +221,18 @@ async function fetchTranscript(videoId: string): Promise<string> {
   console.log("Fetching JSON3 transcript...");
   
   try {
-    const captionRes = await fetch(json3Url, {
+    const captionRes = await fetchWithRetry(json3Url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json",
+        "Referer": watchUrl,
       },
     });
     
-    if (captionRes.ok) {
-      const jsonData = await captionRes.json();
-      const transcript = parseJson3Transcript(jsonData);
-      if (transcript) {
-        console.log("JSON3 transcript fetched, length:", transcript.length);
-        return transcript;
-      }
+    const jsonData = await captionRes.json();
+    const transcript = parseJson3Transcript(jsonData);
+    if (transcript) {
+      console.log("JSON3 transcript fetched, length:", transcript.length);
+      return { transcript, language: selectedLanguage };
     }
   } catch (e) {
     console.log("JSON3 fetch failed:", e);
@@ -168,25 +241,24 @@ async function fetchTranscript(videoId: string): Promise<string> {
   // Fallback: try XML format
   console.log("Trying XML format...");
   try {
-    const xmlRes = await fetch(baseUrl, {
+    const xmlRes = await fetchWithRetry(baseUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/xml",
+        "Referer": watchUrl,
       },
     });
     
-    if (xmlRes.ok) {
-      const xml = await xmlRes.text();
-      const transcript = parseTimedTextXml(xml);
-      if (transcript) {
-        console.log("XML transcript fetched, length:", transcript.length);
-        return transcript;
-      }
+    const xml = await xmlRes.text();
+    const transcript = parseTimedTextXml(xml);
+    if (transcript) {
+      console.log("XML transcript fetched, length:", transcript.length);
+      return { transcript, language: selectedLanguage };
     }
   } catch (e) {
     console.log("XML fetch failed:", e);
   }
 
-  return "";
+  return { transcript: "", language: selectedLanguage };
 }
 
 serve(async (req) => {
@@ -212,6 +284,8 @@ serve(async (req) => {
       });
     }
 
+    console.log("Processing video:", videoId);
+
     // Fetch title via oEmbed
     let title = `YouTube Video ${videoId}`;
     try {
@@ -220,13 +294,16 @@ serve(async (req) => {
       if (oembedRes.ok) {
         const oembedData = await oembedRes.json();
         title = oembedData.title || title;
+        console.log("Video title:", title);
       }
     } catch (e) {
       console.log("Could not fetch video title:", e);
     }
 
     // Fetch transcript
-    const transcript = await fetchTranscript(videoId);
+    const { transcript, language } = await fetchTranscript(videoId);
+
+    console.log("Final result - transcript length:", transcript.length, "language:", language);
 
     // Always return success - let the client handle missing transcripts
     return new Response(
@@ -235,6 +312,8 @@ serve(async (req) => {
         videoId,
         title,
         transcript,
+        language,
+        hasTranscript: transcript.length > 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -246,6 +325,8 @@ serve(async (req) => {
         videoId: "",
         title: "Unknown Video",
         transcript: "",
+        language: "",
+        hasTranscript: false,
         error: error instanceof Error ? error.message : "Failed to fetch transcript",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
