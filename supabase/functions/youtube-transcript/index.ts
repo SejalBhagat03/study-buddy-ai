@@ -43,7 +43,7 @@ function parseTimedTextXml(xml: string): string {
   return texts.join(" ").replace(/\s+/g, " ").trim();
 }
 
-// Parse JSON3 format (more reliable)
+// Parse JSON3 format
 function parseJson3Transcript(json: any): string {
   try {
     const events = json?.events || [];
@@ -66,199 +66,203 @@ function parseJson3Transcript(json: any): string {
   }
 }
 
-// Try multiple user agents to avoid blocks
-const userAgents = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-];
-
-async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
-  let lastError;
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          "User-Agent": userAgents[i % userAgents.length],
+// Use YouTube's innertube API to get video info (more reliable, less rate-limiting)
+async function fetchViaInnertube(videoId: string): Promise<{ transcript: string; language: string }> {
+  console.log("Trying innertube API for:", videoId);
+  
+  const innertubeUrl = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
+  
+  try {
+    const response = await fetch(innertubeUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+      body: JSON.stringify({
+        context: {
+          client: {
+            hl: "en",
+            gl: "US",
+            clientName: "WEB",
+            clientVersion: "2.20231219.04.00",
+          },
         },
-      });
-      if (response.ok) return response;
-      lastError = new Error(`HTTP ${response.status}`);
-    } catch (e) {
-      lastError = e;
-      console.log(`Attempt ${i + 1} failed:`, e);
+        videoId: videoId,
+      }),
+    });
+
+    if (!response.ok) {
+      console.log("Innertube request failed:", response.status);
+      return { transcript: "", language: "" };
     }
-    // Small delay before retry
-    await new Promise(r => setTimeout(r, 500));
+
+    const data = await response.json();
+    const captionTracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+    if (!captionTracks || captionTracks.length === 0) {
+      console.log("No caption tracks from innertube");
+      return { transcript: "", language: "" };
+    }
+
+    console.log("Found", captionTracks.length, "tracks via innertube");
+    
+    // Find best track
+    let selectedTrack = captionTracks.find((t: any) => 
+      (t.languageCode === "en" || t.languageCode?.startsWith("en-")) && t.kind !== "asr"
+    ) || captionTracks.find((t: any) => 
+      t.languageCode === "en" || t.languageCode?.startsWith("en-")
+    ) || captionTracks.find((t: any) => 
+      t.kind !== "asr"
+    ) || captionTracks[0];
+
+    const baseUrl = selectedTrack?.baseUrl;
+    const language = selectedTrack?.languageCode || "unknown";
+
+    if (!baseUrl) {
+      return { transcript: "", language };
+    }
+
+    // Fetch transcript
+    const json3Url = baseUrl + "&fmt=json3";
+    const captionRes = await fetch(json3Url);
+    
+    if (captionRes.ok) {
+      const jsonData = await captionRes.json();
+      const transcript = parseJson3Transcript(jsonData);
+      if (transcript) {
+        console.log("Got transcript via innertube, length:", transcript.length);
+        return { transcript, language };
+      }
+    }
+
+    // Try XML fallback
+    const xmlRes = await fetch(baseUrl);
+    if (xmlRes.ok) {
+      const xml = await xmlRes.text();
+      const transcript = parseTimedTextXml(xml);
+      if (transcript) {
+        return { transcript, language };
+      }
+    }
+
+    return { transcript: "", language };
+  } catch (e) {
+    console.log("Innertube error:", e);
+    return { transcript: "", language: "" };
   }
-  throw lastError;
+}
+
+// Fallback: Try fetching via embed page (lighter than full watch page)
+async function fetchViaEmbed(videoId: string): Promise<{ transcript: string; language: string }> {
+  console.log("Trying embed page for:", videoId);
+  
+  try {
+    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    const response = await fetch(embedUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html",
+      },
+    });
+
+    if (!response.ok) {
+      console.log("Embed fetch failed:", response.status);
+      return { transcript: "", language: "" };
+    }
+
+    const html = await response.text();
+    
+    // Extract captions from embed page
+    const captionMatch = html.match(/"captions":\s*(\{[^}]+\})/);
+    if (!captionMatch) {
+      console.log("No captions in embed page");
+      return { transcript: "", language: "" };
+    }
+
+    // Try to find caption URL in the page
+    const urlMatch = html.match(/https:\/\/www\.youtube\.com\/api\/timedtext[^"]+/g);
+    if (urlMatch && urlMatch.length > 0) {
+      const captionUrl = urlMatch[0].replace(/\\u0026/g, "&");
+      console.log("Found caption URL in embed");
+      
+      const captionRes = await fetch(captionUrl);
+      if (captionRes.ok) {
+        const text = await captionRes.text();
+        const transcript = parseTimedTextXml(text);
+        if (transcript) {
+          return { transcript, language: "en" };
+        }
+      }
+    }
+
+    return { transcript: "", language: "" };
+  } catch (e) {
+    console.log("Embed error:", e);
+    return { transcript: "", language: "" };
+  }
+}
+
+// Third fallback: Try the timedtext API directly
+async function fetchViaTimedText(videoId: string): Promise<{ transcript: string; language: string }> {
+  console.log("Trying timedtext API for:", videoId);
+  
+  const languages = ["en", "en-US", "en-GB", "hi", "es", "fr", "de", "pt", "ja", "ko", "zh"];
+  
+  for (const lang of languages) {
+    try {
+      // Try auto-generated captions
+      const aUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&kind=asr`;
+      const aRes = await fetch(aUrl);
+      if (aRes.ok) {
+        const xml = await aRes.text();
+        if (xml.includes("<text")) {
+          const transcript = parseTimedTextXml(xml);
+          if (transcript && transcript.length > 50) {
+            console.log("Got auto captions via timedtext API, lang:", lang);
+            return { transcript, language: lang };
+          }
+        }
+      }
+
+      // Try manual captions
+      const mUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}`;
+      const mRes = await fetch(mUrl);
+      if (mRes.ok) {
+        const xml = await mRes.text();
+        if (xml.includes("<text")) {
+          const transcript = parseTimedTextXml(xml);
+          if (transcript && transcript.length > 50) {
+            console.log("Got manual captions via timedtext API, lang:", lang);
+            return { transcript, language: lang };
+          }
+        }
+      }
+    } catch (e) {
+      // Continue to next language
+    }
+  }
+
+  return { transcript: "", language: "" };
 }
 
 async function fetchTranscript(videoId: string): Promise<{ transcript: string; language: string }> {
   console.log("Fetching transcript for video:", videoId);
   
-  // Step 1: Fetch the watch page with multiple headers to appear more like a browser
-  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  // Try innertube API first (most reliable)
+  let result = await fetchViaInnertube(videoId);
+  if (result.transcript) return result;
   
-  let html = "";
-  try {
-    const watchRes = await fetchWithRetry(watchUrl, {
-      headers: {
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Referer": "https://www.google.com/",
-        "DNT": "1",
-      },
-    });
-    html = await watchRes.text();
-    console.log("Watch page fetched, length:", html.length);
-  } catch (e) {
-    console.log("Failed to fetch watch page:", e);
-    return { transcript: "", language: "" };
-  }
-
-  // Step 2: Extract ytInitialPlayerResponse - try multiple patterns
-  let playerResponse: any = null;
+  // Try timedtext API (direct, less rate-limited)
+  result = await fetchViaTimedText(videoId);
+  if (result.transcript) return result;
   
-  const patterns = [
-    /ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:\s*var|<\/script>|\s*if|\s*const)/s,
-    /var ytInitialPlayerResponse\s*=\s*(\{.+?\});/s,
-    /"playerResponse":\s*(\{.+?\})\s*,\s*"(?:videoDetails|playabilityStatus)"/s,
-  ];
+  // Try embed page as last resort
+  result = await fetchViaEmbed(videoId);
+  if (result.transcript) return result;
 
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    if (match) {
-      try {
-        playerResponse = JSON.parse(match[1]);
-        console.log("Parsed player response with pattern");
-        break;
-      } catch (e) {
-        console.log("Parse failed for pattern, trying next");
-      }
-    }
-  }
-
-  if (!playerResponse) {
-    // Try extracting from embedded player config
-    const configMatch = html.match(/ytcfg\.set\s*\(\s*(\{.+?\})\s*\)/s);
-    if (configMatch) {
-      try {
-        const config = JSON.parse(configMatch[1]);
-        if (config.PLAYER_VARS?.embedded_player_response) {
-          playerResponse = JSON.parse(config.PLAYER_VARS.embedded_player_response);
-        }
-      } catch (e) {
-        console.log("Embedded config parse failed");
-      }
-    }
-  }
-
-  if (!playerResponse) {
-    console.log("Could not find ytInitialPlayerResponse");
-    return { transcript: "", language: "" };
-  }
-
-  // Step 3: Extract caption tracks
-  const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-
-  if (!captionTracks || captionTracks.length === 0) {
-    console.log("No caption tracks found in player response");
-    // Check if captions are disabled
-    const reason = playerResponse?.captions?.playerCaptionsTracklistRenderer?.reason;
-    if (reason) {
-      console.log("Caption unavailable reason:", reason);
-    }
-    return { transcript: "", language: "" };
-  }
-
-  console.log("Found", captionTracks.length, "caption tracks");
-  console.log("Available languages:", captionTracks.map((t: any) => t.languageCode).join(", "));
-
-  // Step 4: Find the best caption track - prioritize manual captions over auto-generated
-  let selectedTrack = null;
-  let selectedLanguage = "";
-
-  // First try: English manual captions
-  selectedTrack = captionTracks.find((t: any) => 
-    (t.languageCode === "en" || t.languageCode?.startsWith("en-")) &&
-    t.kind !== "asr"
-  );
-  
-  // Second try: Any English (including auto-generated)
-  if (!selectedTrack) {
-    selectedTrack = captionTracks.find((t: any) => 
-      t.languageCode === "en" || 
-      t.languageCode?.startsWith("en-") ||
-      t.vssId?.includes(".en") || 
-      t.vssId?.includes("a.en")
-    );
-  }
-  
-  // Third try: Any non-auto captions
-  if (!selectedTrack) {
-    selectedTrack = captionTracks.find((t: any) => t.kind !== "asr");
-  }
-  
-  // Fourth try: Any available captions
-  if (!selectedTrack) {
-    selectedTrack = captionTracks[0];
-  }
-
-  selectedLanguage = selectedTrack?.languageCode || selectedTrack?.name?.simpleText || "unknown";
-  console.log("Selected track:", selectedLanguage, selectedTrack?.vssId, "kind:", selectedTrack?.kind);
-
-  const baseUrl = selectedTrack?.baseUrl;
-  if (!baseUrl) {
-    console.log("No baseUrl in selected track");
-    return { transcript: "", language: "" };
-  }
-
-  // Step 5: Fetch transcript in JSON3 format (more reliable)
-  const json3Url = baseUrl + "&fmt=json3";
-  console.log("Fetching JSON3 transcript...");
-  
-  try {
-    const captionRes = await fetchWithRetry(json3Url, {
-      headers: {
-        "Accept": "application/json",
-        "Referer": watchUrl,
-      },
-    });
-    
-    const jsonData = await captionRes.json();
-    const transcript = parseJson3Transcript(jsonData);
-    if (transcript) {
-      console.log("JSON3 transcript fetched, length:", transcript.length);
-      return { transcript, language: selectedLanguage };
-    }
-  } catch (e) {
-    console.log("JSON3 fetch failed:", e);
-  }
-
-  // Fallback: try XML format
-  console.log("Trying XML format...");
-  try {
-    const xmlRes = await fetchWithRetry(baseUrl, {
-      headers: {
-        "Accept": "text/xml",
-        "Referer": watchUrl,
-      },
-    });
-    
-    const xml = await xmlRes.text();
-    const transcript = parseTimedTextXml(xml);
-    if (transcript) {
-      console.log("XML transcript fetched, length:", transcript.length);
-      return { transcript, language: selectedLanguage };
-    }
-  } catch (e) {
-    console.log("XML fetch failed:", e);
-  }
-
-  return { transcript: "", language: selectedLanguage };
+  console.log("All methods failed to get transcript");
+  return { transcript: "", language: "" };
 }
 
 serve(async (req) => {
@@ -286,7 +290,7 @@ serve(async (req) => {
 
     console.log("Processing video:", videoId);
 
-    // Fetch title via oEmbed
+    // Fetch title via oEmbed (reliable and fast)
     let title = `YouTube Video ${videoId}`;
     try {
       const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
@@ -300,12 +304,11 @@ serve(async (req) => {
       console.log("Could not fetch video title:", e);
     }
 
-    // Fetch transcript
+    // Fetch transcript using multiple methods
     const { transcript, language } = await fetchTranscript(videoId);
 
     console.log("Final result - transcript length:", transcript.length, "language:", language);
 
-    // Always return success - let the client handle missing transcripts
     return new Response(
       JSON.stringify({
         success: true,
