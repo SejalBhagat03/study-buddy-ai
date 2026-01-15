@@ -67,6 +67,14 @@ export default {
         student: {
           bubble: "hsl(var(--student-bubble))",
         },
+        pastel: {
+          pink: "hsl(var(--pastel-pink))",
+          blue: "hsl(var(--pastel-blue))",
+          green: "hsl(var(--pastel-green))",
+          yellow: "hsl(var(--pastel-yellow))",
+          purple: "hsl(var(--pastel-purple))",
+          orange: "hsl(var(--pastel-orange))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
