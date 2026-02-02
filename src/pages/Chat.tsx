@@ -6,6 +6,7 @@ import { YouTubeVideoForm } from "@/components/YouTubeVideoForm";
 import { YouTubeVideosList } from "@/components/YouTubeVideosList";
 import { PDFUpload } from "@/components/PDFUpload";
 import { KnowledgeBasePanel } from "@/components/KnowledgeBasePanel";
+import { StreakWidget } from "@/components/StreakWidget";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -249,6 +250,9 @@ export default function Chat() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto p-6 space-y-6">
+            {/* Streak Widget */}
+            <StreakWidget />
+
             {/* Knowledge Base Panel - Always visible */}
             <KnowledgeBasePanel studyContent={studyContent} />
 
