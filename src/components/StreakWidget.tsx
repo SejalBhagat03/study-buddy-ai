@@ -1,4 +1,4 @@
-import { Flame, Target, Trophy, Sparkles } from "lucide-react";
+import { Flame, Target, Trophy, Zap, TrendingUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useStudyStreak } from "@/hooks/useStudyStreak";
 import { cn } from "@/lib/utils";
@@ -8,8 +8,12 @@ export function StreakWidget() {
 
   if (loading) {
     return (
-      <div className="pastel-card p-4 animate-pulse">
-        <div className="h-20 bg-muted rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="glass-card rounded-2xl p-5 animate-pulse">
+            <div className="h-16 bg-muted rounded-xl" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -18,88 +22,125 @@ export function StreakWidget() {
   const goalMet = goalProgress >= 100;
 
   return (
-    <div className="pastel-card p-5 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          Study Progress
-        </h3>
-        {isStreakActive && (
-          <span className="text-xs font-medium px-2 py-1 rounded-full bg-pastel-orange text-foreground">
-            🔥 On Fire!
-          </span>
-        )}
-      </div>
-
-      {/* Streak Display */}
-      <div className="flex items-center gap-4">
-        <div className={cn(
-          "relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500",
-          isStreakActive 
-            ? "study-gradient shadow-glow" 
-            : "bg-muted"
-        )}>
-          <Flame className={cn(
-            "w-8 h-8 transition-colors",
-            isStreakActive ? "text-white" : "text-muted-foreground"
-          )} />
-          {isStreakActive && (
-            <div className="absolute -top-1 -right-1 w-6 h-6 bg-pastel-yellow rounded-full flex items-center justify-center text-xs font-bold text-foreground animate-bounce-in">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Streak Card */}
+      <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-elevated transition-all duration-300">
+        <div className="absolute inset-0 study-gradient opacity-5 group-hover:opacity-10 transition-opacity" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
+              isStreakActive 
+                ? "study-gradient shadow-glow" 
+                : "bg-muted"
+            )}>
+              <Flame className={cn(
+                "w-6 h-6",
+                isStreakActive ? "text-primary-foreground" : "text-muted-foreground"
+              )} />
+            </div>
+            {isStreakActive && (
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-accent/20 text-accent-foreground border border-accent/30">
+                🔥 Active
+              </span>
+            )}
+          </div>
+          
+          <div className="space-y-1">
+            <p className="text-3xl font-bold text-foreground tracking-tight">
               {currentStreak}
-            </div>
-          )}
-        </div>
-        
-        <div className="flex-1">
-          <p className="text-2xl font-bold text-foreground">
-            {currentStreak} <span className="text-sm font-normal text-muted-foreground">day streak</span>
-          </p>
-          <div className="flex items-center gap-3 mt-1">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Trophy className="w-3 h-3 text-pastel-yellow" />
-              Best: {longestStreak} days
-            </div>
+            </p>
+            <p className="text-sm text-muted-foreground font-medium">
+              Day Streak
+            </p>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-border/50 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-pastel-yellow" />
+            <span className="text-xs text-muted-foreground">
+              Personal best: <span className="font-semibold text-foreground">{longestStreak} days</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Daily Goal Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <Target className="w-4 h-4" />
-            Today's Goal
-          </span>
-          <span className={cn(
-            "font-medium",
-            goalMet ? "text-pastel-green" : "text-foreground"
-          )}>
-            {todayCompletedMinutes}/{todayGoalMinutes} min
-          </span>
-        </div>
-        
-        <div className="relative">
-          <Progress 
-            value={goalProgress} 
-            className="h-3 bg-muted"
-          />
-          {goalMet && (
-            <div className="absolute right-0 -top-1 animate-bounce-in">
-              <span className="text-lg">✨</span>
+      {/* Daily Goal Card */}
+      <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-elevated transition-all duration-300">
+        <div className="absolute inset-0 bg-pastel-green/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-pastel-green/20 flex items-center justify-center">
+              <Target className="w-6 h-6 text-foreground" />
             </div>
-          )}
+            {goalMet && (
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-pastel-green/20 text-foreground border border-pastel-green/30">
+                ✓ Complete
+              </span>
+            )}
+          </div>
+          
+          <div className="space-y-1">
+            <p className="text-3xl font-bold text-foreground tracking-tight">
+              {todayCompletedMinutes}<span className="text-lg text-muted-foreground font-normal">/{todayGoalMinutes}</span>
+            </p>
+            <p className="text-sm text-muted-foreground font-medium">
+              Minutes Today
+            </p>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <Progress 
+              value={goalProgress} 
+              className="h-2 bg-muted"
+            />
+            <p className="text-xs text-muted-foreground">
+              {goalMet ? (
+                <span className="text-foreground font-medium">🎉 Daily goal achieved!</span>
+              ) : (
+                <span>{Math.round(goalProgress)}% complete</span>
+              )}
+            </p>
+          </div>
         </div>
-        
-        {goalMet ? (
-          <p className="text-xs text-center text-pastel-green font-medium animate-fade-in">
-            🎉 Goal achieved! Keep it up!
-          </p>
-        ) : (
-          <p className="text-xs text-center text-muted-foreground">
-            {todayGoalMinutes - todayCompletedMinutes} min left to reach your goal
-          </p>
-        )}
+      </div>
+
+      {/* Stats Card */}
+      <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-elevated transition-all duration-300">
+        <div className="absolute inset-0 bg-pastel-purple/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-pastel-purple/20 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-foreground" />
+            </div>
+            <div className="flex items-center gap-1 text-xs text-pastel-green font-medium">
+              <Zap className="w-3 h-3" />
+              +12%
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <p className="text-3xl font-bold text-foreground tracking-tight">
+              {Math.round((currentStreak / 7) * 100)}%
+            </p>
+            <p className="text-sm text-muted-foreground font-medium">
+              Weekly Consistency
+            </p>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <div className="flex justify-between text-xs">
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <div className={cn(
+                    "w-5 h-5 rounded-md transition-colors",
+                    i < currentStreak % 7 ? "bg-primary" : "bg-muted"
+                  )} />
+                  <span className="text-muted-foreground">{day}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
