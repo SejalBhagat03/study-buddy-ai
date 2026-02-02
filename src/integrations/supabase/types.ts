@@ -117,6 +117,36 @@ export type Database = {
           },
         ]
       }
+      daily_goals: {
+        Row: {
+          completed_minutes: number
+          created_at: string
+          goal_date: string
+          id: string
+          target_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_minutes?: number
+          created_at?: string
+          goal_date?: string
+          id?: string
+          target_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_minutes?: number
+          created_at?: string
+          goal_date?: string
+          id?: string
+          target_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           back: string
@@ -272,6 +302,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_activities: {
+        Row: {
+          activity_type: string
+          chapter_id: string | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          chapter_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          chapter_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_study_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_study_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_study_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       videos: {
         Row: {
