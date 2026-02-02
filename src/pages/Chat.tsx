@@ -11,7 +11,8 @@ import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trash2, BookOpen, Lightbulb, FileText, Video, Sparkles, Target, Brain, HelpCircle } from "lucide-react";
+import { Trash2, BookOpen, Lightbulb, FileText, Video, Sparkles, Target, Brain, HelpCircle, ArrowRight, Upload, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const sampleQuestions = [
   "What is the law of supply and demand?",
@@ -20,27 +21,30 @@ const sampleQuestions = [
   "Difference between micro and macro economics",
 ];
 
-// Study partner features displayed when empty
 const studyFeatures = [
   {
     icon: Brain,
     title: "AI-Powered Q&A",
-    description: "Ask any question about your study materials and get instant, exam-focused explanations",
+    description: "Get instant, exam-focused explanations for any concept",
+    color: "bg-pastel-purple/20",
   },
   {
     icon: Target,
     title: "Concept Breakdown",
-    description: "Complex topics explained step-by-step in simple, student-friendly language",
+    description: "Complex topics explained step-by-step",
+    color: "bg-pastel-blue/20",
   },
   {
     icon: Sparkles,
     title: "Smart Summaries",
-    description: "Generate key points, definitions, and exam tips from PDFs and videos",
+    description: "Key points and exam tips from your materials",
+    color: "bg-pastel-pink/20",
   },
   {
     icon: HelpCircle,
     title: "Doubt Resolution",
-    description: "Get follow-up explanations until you fully understand the concept",
+    description: "Follow-up explanations until you understand",
+    color: "bg-pastel-green/20",
   },
 ];
 
@@ -50,7 +54,6 @@ export default function Chat() {
   const [showYouTube, setShowYouTube] = useState(false);
   const [showPDF, setShowPDF] = useState(false);
 
-  // Fetch videos and chapters on mount to include in study content
   useEffect(() => {
     const fetchContent = async () => {
       if (!user) return;
@@ -69,7 +72,6 @@ export default function Chat() {
       Macroeconomics studies the economy as a whole.
       `;
 
-      // Fetch user's videos
       const { data: videos } = await supabase
         .from("videos")
         .select("title, transcript")
@@ -85,7 +87,6 @@ export default function Chat() {
         }
       }
 
-      // Fetch user's chapters (PDFs)
       const { data: chapters } = await supabase
         .from("chapters")
         .select("title, content")
@@ -119,7 +120,6 @@ export default function Chat() {
   }, [messages]);
 
   const handleVideoAdded = async () => {
-    // Refetch all content when a video is added
     if (!user) return;
     
     let content = `
@@ -170,7 +170,6 @@ export default function Chat() {
   };
 
   const handlePDFUploaded = async (chapterId: string, pdfContent: string) => {
-    // Refetch all content when PDF is uploaded
     await handleVideoAdded();
     setShowPDF(false);
   };
@@ -181,51 +180,54 @@ export default function Chat() {
 
       <main className="flex-1 flex flex-col pt-16 lg:pt-0">
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between max-w-4xl mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="p-2 study-gradient rounded-xl">
+        <header className="sticky top-0 z-10 glass-card border-b border-border px-6 py-4">
+          <div className="flex items-center justify-between max-w-5xl mx-auto">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 study-gradient rounded-xl shadow-soft">
                 <BookOpen className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-semibold text-foreground">Study Chat</h1>
+                <h1 className="text-lg font-semibold text-foreground tracking-tight">Study Chat</h1>
                 <p className="text-xs text-muted-foreground">
-                  Your AI Study Partner
+                  AI-powered learning assistant
                 </p>
               </div>
             </div>
+            
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
+                variant={showPDF ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
                   setShowPDF(!showPDF);
                   setShowYouTube(false);
                 }}
+                className="gap-2"
               >
-                <FileText className="w-4 h-4 mr-1" />
-                PDF
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Upload PDF</span>
               </Button>
               <Button
-                variant="outline"
+                variant={showYouTube ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
                   setShowYouTube(!showYouTube);
                   setShowPDF(false);
                 }}
+                className="gap-2"
               >
-                <Video className="w-4 h-4 mr-1" />
-                Video
+                <Video className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Video</span>
               </Button>
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearMessages}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive gap-2"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Clear</span>
                 </Button>
               )}
             </div>
@@ -233,14 +235,14 @@ export default function Chat() {
 
           {/* PDF Upload Form */}
           {showPDF && (
-            <div className="max-w-4xl mx-auto mt-4">
+            <div className="max-w-5xl mx-auto mt-4 animate-fade-in">
               <PDFUpload onUploadComplete={handlePDFUploaded} />
             </div>
           )}
 
           {/* YouTube Form */}
           {showYouTube && (
-            <div className="max-w-4xl mx-auto mt-4 p-4 bg-card rounded-xl border border-border space-y-4">
+            <div className="max-w-5xl mx-auto mt-4 p-4 bg-card rounded-xl border border-border space-y-4 animate-fade-in">
               <YouTubeVideoForm onSuccess={handleVideoAdded} />
               <YouTubeVideosList onUpdate={handleVideoAdded} />
             </div>
@@ -249,53 +251,77 @@ export default function Chat() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto p-6 space-y-6">
+          <div className="max-w-5xl mx-auto p-6 space-y-6">
             {/* Streak Widget */}
             <StreakWidget />
 
-            {/* Knowledge Base Panel - Always visible */}
+            {/* Knowledge Base Panel */}
             <KnowledgeBasePanel studyContent={studyContent} />
 
             {messages.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-2xl study-gradient flex items-center justify-center mx-auto mb-4">
-                  <Lightbulb className="w-8 h-8 text-primary-foreground" />
+              <div className="py-8 animate-fade-in">
+                {/* Hero Section */}
+                <div className="text-center mb-10">
+                  <div className="w-20 h-20 rounded-3xl study-gradient flex items-center justify-center mx-auto mb-6 shadow-glow">
+                    <Lightbulb className="w-10 h-10 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 tracking-tight">
+                    Your AI Study Partner
+                  </h2>
+                  <p className="text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                    Upload study materials, ask questions, and master concepts with personalized explanations.
+                  </p>
                 </div>
-                <h2 className="text-xl font-semibold text-foreground mb-2">
-                  Your AI Study Partner
-                </h2>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  I can help you understand your study materials. Upload PDFs or add YouTube videos, then ask me anything!
-                </p>
 
-                {/* Study Features Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto mb-6">
-                  {studyFeatures.map((feature) => (
+                {/* Features Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                  {studyFeatures.map((feature, index) => (
                     <div
                       key={feature.title}
-                      className="p-4 bg-secondary/30 rounded-xl border border-border text-left"
+                      className={cn(
+                        "group p-5 rounded-2xl border border-border/50 bg-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1",
+                        "animate-fade-in"
+                      )}
+                      style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <feature.icon className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground">{feature.title}</span>
+                      <div className={cn(
+                        "w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110",
+                        feature.color
+                      )}>
+                        <feature.icon className="w-5 h-5 text-foreground" />
                       </div>
-                      <p className="text-xs text-muted-foreground">{feature.description}</p>
+                      <h3 className="text-sm font-semibold text-foreground mb-1.5">
+                        {feature.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {feature.description}
+                      </p>
                     </div>
                   ))}
                 </div>
 
-                {/* Sample Questions */}
-                <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {sampleQuestions.map((question) => (
-                    <button
-                      key={question}
-                      onClick={() => sendMessage(question)}
-                      className="px-4 py-2 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-full transition-colors"
-                    >
-                      {question}
-                    </button>
-                  ))}
+                {/* Quick Start */}
+                <div className="glass-card rounded-2xl p-6">
+                  <p className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Try asking something
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {sampleQuestions.map((question, index) => (
+                      <button
+                        key={question}
+                        onClick={() => sendMessage(question)}
+                        className={cn(
+                          "group px-4 py-2.5 text-sm bg-secondary/50 hover:bg-primary hover:text-primary-foreground text-foreground rounded-xl transition-all duration-200 flex items-center gap-2",
+                          "animate-fade-in"
+                        )}
+                        style={{ animationDelay: `${0.4 + index * 0.1}s` }}
+                      >
+                        {question}
+                        <ArrowRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -317,8 +343,8 @@ export default function Chat() {
         </div>
 
         {/* Input */}
-        <div className="sticky bottom-0 bg-background/80 backdrop-blur-lg border-t border-border p-4">
-          <div className="max-w-4xl mx-auto">
+        <div className="sticky bottom-0 glass-card border-t border-border p-4">
+          <div className="max-w-5xl mx-auto">
             <ChatInput
               onSend={sendMessage}
               disabled={isLoading}
