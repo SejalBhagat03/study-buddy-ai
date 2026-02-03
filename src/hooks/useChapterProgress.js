@@ -2,15 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-interface ChapterProgress {
-  chapter_id: string;
-  completed: boolean;
-  completed_at: string | null;
-}
-
 export function useChapterProgress() {
   const { user } = useAuth();
-  const [progress, setProgress] = useState<ChapterProgress[]>([]);
+  const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProgress = useCallback(async () => {
@@ -40,7 +34,7 @@ export function useChapterProgress() {
   }, [fetchProgress]);
 
   const toggleChapterComplete = useCallback(
-    async (chapterId: string) => {
+    async (chapterId) => {
       if (!user) return;
 
       const existing = progress.find((p) => p.chapter_id === chapterId);
@@ -78,7 +72,7 @@ export function useChapterProgress() {
   );
 
   const isChapterComplete = useCallback(
-    (chapterId: string) => {
+    (chapterId) => {
       return progress.find((p) => p.chapter_id === chapterId)?.completed || false;
     },
     [progress]

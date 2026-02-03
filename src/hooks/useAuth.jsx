@@ -1,22 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
 // Helper to clear invalid auth state
 const clearInvalidSession = () => {
   // Clear all Supabase auth related items from localStorage
-  const keysToRemove: string[] = [];
+  const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && (key.includes('supabase') || key.includes('sb-'))) {
@@ -26,9 +16,9 @@ const clearInvalidSession = () => {
   keysToRemove.forEach(key => localStorage.removeItem(key));
 };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email, password, fullName) => {
     try {
       // Clear any existing invalid session first
       clearInvalidSession();
@@ -89,14 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       
-      return { error: error as Error | null };
+      return { error };
     } catch (err) {
       console.error('SignUp error:', err);
       return { error: new Error('Network error. Please check your connection and try again.') };
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email, password) => {
     try {
       // Clear any existing invalid session first
       clearInvalidSession();
@@ -106,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
       
-      return { error: error as Error | null };
+      return { error };
     } catch (err) {
       console.error('SignIn error:', err);
       return { error: new Error('Network error. Please check your connection and try again.') };

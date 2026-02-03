@@ -1,20 +1,7 @@
 import { toast } from "sonner";
 
-interface ExportNote {
-  title: string;
-  content: string;
-  chapter?: string;
-  updated_at: string;
-}
-
-interface ExportFlashcard {
-  front: string;
-  back: string;
-  deck_name: string;
-}
-
 export function useExport() {
-  const exportNotesAsMarkdown = (notes: ExportNote[]) => {
+  const exportNotesAsMarkdown = (notes) => {
     if (notes.length === 0) {
       toast.error("No notes to export");
       return;
@@ -35,14 +22,14 @@ export function useExport() {
     toast.success("Notes exported as Markdown!");
   };
 
-  const exportFlashcardsAsMarkdown = (flashcards: ExportFlashcard[]) => {
+  const exportFlashcardsAsMarkdown = (flashcards) => {
     if (flashcards.length === 0) {
       toast.error("No flashcards to export");
       return;
     }
 
     // Group by deck
-    const decks: Record<string, ExportFlashcard[]> = {};
+    const decks = {};
     flashcards.forEach((card) => {
       if (!decks[card.deck_name]) {
         decks[card.deck_name] = [];
@@ -66,7 +53,7 @@ export function useExport() {
     toast.success("Flashcards exported as Markdown!");
   };
 
-  const exportNotesAsHTML = (notes: ExportNote[]) => {
+  const exportNotesAsHTML = (notes) => {
     if (notes.length === 0) {
       toast.error("No notes to export");
       return;
@@ -110,14 +97,14 @@ export function useExport() {
     toast.success("Notes exported as HTML (print to PDF)!");
   };
 
-  const exportFlashcardsAsHTML = (flashcards: ExportFlashcard[]) => {
+  const exportFlashcardsAsHTML = (flashcards) => {
     if (flashcards.length === 0) {
       toast.error("No flashcards to export");
       return;
     }
 
     // Group by deck
-    const decks: Record<string, ExportFlashcard[]> = {};
+    const decks = {};
     flashcards.forEach((card) => {
       if (!decks[card.deck_name]) {
         decks[card.deck_name] = [];
@@ -172,7 +159,7 @@ export function useExport() {
   };
 }
 
-function downloadFile(content: string, filename: string, mimeType: string) {
+function downloadFile(content, filename, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -184,7 +171,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function escapeHtml(text: string): string {
+function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;

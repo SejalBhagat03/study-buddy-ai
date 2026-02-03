@@ -2,18 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-interface Chapter {
-  id: string;
-  title: string;
-  content: string;
-  summary: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export function useChapters() {
   const { user } = useAuth();
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchChapters = useCallback(async () => {

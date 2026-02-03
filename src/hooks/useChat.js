@@ -1,27 +1,15 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
-export type Message = {
-  id: string;
-  role: "user" | "assistant" | "teacher" | "student";
-  content: string;
-};
-
-interface UseChatOptions {
-  mode?: "chat" | "teacher" | "summary";
-  studyContent?: string;
-}
-
-export function useChat(options: UseChatOptions = {}) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function useChat(options = {}) {
+  const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Use a ref to always have the latest studyContent
   const studyContentRef = { current: options.studyContent || "" };
   studyContentRef.current = options.studyContent || "";
 
-  const sendMessage = useCallback(async (content: string) => {
-    const userMessage: Message = {
+  const sendMessage = useCallback(async (content) => {
+    const userMessage = {
       id: crypto.randomUUID(),
       role: options.mode === "teacher" ? "student" : "user",
       content,
@@ -32,7 +20,7 @@ export function useChat(options: UseChatOptions = {}) {
 
     let assistantContent = "";
 
-    const assistantMessage: Message = {
+    const assistantMessage = {
       id: crypto.randomUUID(),
       role: options.mode === "teacher" ? "teacher" : "assistant",
       content: "",
@@ -85,7 +73,7 @@ export function useChat(options: UseChatOptions = {}) {
 
         textBuffer += decoder.decode(value, { stream: true });
 
-        let newlineIndex: number;
+        let newlineIndex;
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);

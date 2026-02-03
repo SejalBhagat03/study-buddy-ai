@@ -2,9 +2,9 @@ import { useState, useCallback, useRef } from "react";
 
 export function useSpeech() {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const utteranceRef = useRef(null);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text) => {
     if (!("speechSynthesis" in window)) {
       console.warn("Text-to-speech not supported in this browser");
       return;

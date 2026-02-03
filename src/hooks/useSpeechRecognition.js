@@ -1,42 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 
-// Extend Window interface for speech recognition
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
-
-interface SpeechRecognitionResultItem {
-  transcript: string;
-  confidence: number;
-}
-
-interface SpeechRecognitionResult {
-  [index: number]: SpeechRecognitionResultItem;
-  isFinal: boolean;
-  length: number;
-}
-
-interface SpeechRecognitionResultList {
-  [index: number]: SpeechRecognitionResult;
-  length: number;
-}
-
-interface CustomSpeechRecognitionEvent {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
-
-interface SpeechRecognitionErrorEvent {
-  error: string;
-}
-
 export function useSpeechRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef(null);
 
   const isSupported = typeof window !== "undefined" && 
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
@@ -50,7 +17,7 @@ export function useSpeechRecognition() {
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "en-US";
 
-    recognitionRef.current.onresult = (event: CustomSpeechRecognitionEvent) => {
+    recognitionRef.current.onresult = (event) => {
       let finalTranscript = "";
       let interimTranscript = "";
 
@@ -70,7 +37,7 @@ export function useSpeechRecognition() {
       setIsListening(false);
     };
 
-    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognitionRef.current.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
       setIsListening(false);
     };

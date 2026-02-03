@@ -113,7 +113,7 @@ export default function Chat() {
     studyContent,
   });
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,7 +169,7 @@ export default function Chat() {
     setStudyContent(content);
   };
 
-  const handlePDFUploaded = async (chapterId: string, pdfContent: string) => {
+  const handlePDFUploaded = async (chapterId, pdfContent) => {
     await handleVideoAdded();
     setShowPDF(false);
   };

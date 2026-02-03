@@ -20,29 +20,14 @@ import {
   RotateCcw
 } from "lucide-react";
 
-interface Question {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-}
-
-interface QuizState {
-  questions: Question[];
-  currentIndex: number;
-  answers: (number | null)[];
-  showResult: boolean;
-  isSubmitted: boolean;
-}
-
 export default function Quiz() {
   const { user } = useAuth();
   const { chapters, loading: chaptersLoading } = useChapters();
   const navigate = useNavigate();
   
-  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [quiz, setQuiz] = useState<QuizState | null>(null);
+  const [quiz, setQuiz] = useState(null);
 
   const selectedChapterData = chapters.find(c => c.id === selectedChapter);
 
@@ -80,7 +65,7 @@ export default function Quiz() {
     }
   };
 
-  const selectAnswer = (optionIndex: number) => {
+  const selectAnswer = (optionIndex) => {
     if (!quiz || quiz.isSubmitted) return;
     
     setQuiz(prev => {
@@ -119,7 +104,7 @@ export default function Quiz() {
         user_id: user.id,
         chapter_id: selectedChapterData.id,
         title: `Quiz: ${selectedChapterData.title}`,
-        questions: quiz.questions as any,
+        questions: quiz.questions,
         score,
         total_questions: quiz.questions.length,
         completed_at: new Date().toISOString(),
