@@ -19,17 +19,6 @@ import { useChapters } from "@/hooks/useChapters";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-interface Slide {
-  title: string;
-  type: "overview" | "concepts" | "tips" | "warnings";
-  points: string[];
-}
-
-interface Summary {
-  title: string;
-  slides: Slide[];
-}
-
 const iconMap = {
   overview: BookOpen,
   concepts: Target,
@@ -42,8 +31,8 @@ export default function Summaries() {
   const { chapters, loading: chaptersLoading } = useChapters();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+  const [summary, setSummary] = useState(null);
 
   const selectedChapterData = chapters.find((c) => c.id === selectedChapter);
 

@@ -33,22 +33,13 @@ import {
   Download
 } from "lucide-react";
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  chapter_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export default function Notes() {
   const { user } = useAuth();
   const { chapters } = useChapters();
   const { exportNotesAsMarkdown, exportNotesAsHTML } = useExport();
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState(null);
   const [showNewNote, setShowNewNote] = useState(false);
 
   const [newNote, setNewNote] = useState({
@@ -112,7 +103,7 @@ export default function Notes() {
     }
   };
 
-  const updateNote = async (id: string) => {
+  const updateNote = async (id) => {
     if (!editNote.title.trim() || !editNote.content.trim()) {
       toast.error("Please fill in title and content");
       return;
@@ -138,7 +129,7 @@ export default function Notes() {
     }
   };
 
-  const deleteNote = async (id: string) => {
+  const deleteNote = async (id) => {
     try {
       const { error } = await supabase.from("notes").delete().eq("id", id);
       if (error) throw error;
@@ -150,17 +141,17 @@ export default function Notes() {
     }
   };
 
-  const startEditing = (note: Note) => {
+  const startEditing = (note) => {
     setEditingId(note.id);
     setEditNote({ title: note.title, content: note.content });
   };
 
-  const getChapterTitle = (chapterId: string | null) => {
+  const getChapterTitle = (chapterId) => {
     if (!chapterId) return null;
     return chapters.find((c) => c.id === chapterId)?.title;
   };
 
-  const handleExport = (format: "markdown" | "html") => {
+  const handleExport = (format) => {
     const exportData = notes.map((note) => ({
       title: note.title,
       content: note.content,

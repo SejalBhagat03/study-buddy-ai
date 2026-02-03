@@ -3,17 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-interface StreakData {
-  currentStreak: number;
-  longestStreak: number;
-  lastStudyDate: string | null;
-  todayGoalMinutes: number;
-  todayCompletedMinutes: number;
-}
-
 export function useStudyStreak() {
   const { user } = useAuth();
-  const [streakData, setStreakData] = useState<StreakData>({
+  const [streakData, setStreakData] = useState({
     currentStreak: 0,
     longestStreak: 0,
     lastStudyDate: null,
@@ -65,7 +57,7 @@ export function useStudyStreak() {
   }, [fetchStreakData]);
 
   const logStudyActivity = useCallback(
-    async (activityType: string, durationMinutes: number, chapterId?: string) => {
+    async (activityType, durationMinutes, chapterId) => {
       if (!user) return;
 
       try {
