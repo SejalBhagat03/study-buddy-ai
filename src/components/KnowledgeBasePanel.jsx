@@ -13,7 +13,7 @@
  } from "lucide-react";
  import { ScrollArea } from "@/components/ui/scroll-area";
  
- export function KnowledgeBasePanel({ studyContent, onRefresh }) {
+ export function KnowledgeBasePanel({ studyContent }) {
    const { user } = useAuth();
    const [isExpanded, setIsExpanded] = useState(false);
    const [items, setItems] = useState([]);
