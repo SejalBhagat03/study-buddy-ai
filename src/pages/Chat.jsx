@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+ import { useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
@@ -54,8 +55,7 @@ export default function Chat() {
   const [showYouTube, setShowYouTube] = useState(false);
   const [showPDF, setShowPDF] = useState(false);
 
-  useEffect(() => {
-    const fetchContent = async () => {
+   const fetchStudyContent = useCallback(async () => {
       if (!user) return;
 
       let content = `
@@ -103,15 +103,12 @@ export default function Chat() {
       }
 
       setStudyContent(content);
-    };
+   }, [user]);
 
-    fetchContent();
+   useEffect(() => {
+     fetchStudyContent();
   }, [user]);
 
-  const { messages, isLoading, sendMessage, clearMessages } = useChat({
-    mode: "chat",
-    studyContent,
-  });
 
   const messagesEndRef = useRef(null);
 
@@ -119,54 +116,13 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleVideoAdded = async () => {
-    if (!user) return;
-    
-    let content = `
-    Economics is a social science that studies how people interact with value, particularly the production, distribution, and consumption of goods and services.
-    
-    Key concepts include:
-    - Supply and Demand: The relationship between the availability of a product and the desire for it
-    - GDP (Gross Domestic Product): Total value of goods and services produced in a country
-    - Inflation: The rate at which prices increase over time
-    - Market Equilibrium: The point where supply equals demand
-    - Opportunity Cost: The value of the next best alternative foregone
-    
-    Microeconomics focuses on individual agents and markets.
-    Macroeconomics studies the economy as a whole.
-    `;
-
-    const { data: videos } = await supabase
-      .from("videos")
-      .select("title, transcript")
-      .eq("user_id", user.id);
-
-    if (videos && videos.length > 0) {
-      const videosWithTranscripts = videos.filter(v => v.transcript && v.transcript.trim().length > 0);
-      if (videosWithTranscripts.length > 0) {
-        content += "\n\n=== YOUTUBE VIDEO TRANSCRIPTS ===\n";
-        videosWithTranscripts.forEach((video) => {
-          content += `\n--- Video: ${video.title} ---\n${video.transcript}\n`;
-        });
-      }
-    }
-
-    const { data: chapters } = await supabase
-      .from("chapters")
-      .select("title, content")
-      .eq("user_id", user.id);
-
-    if (chapters && chapters.length > 0) {
-      const chaptersWithContent = chapters.filter(c => c.content && c.content.trim().length > 0);
-      if (chaptersWithContent.length > 0) {
-        content += "\n\n=== UPLOADED PDF DOCUMENTS ===\n";
-        chaptersWithContent.forEach((chapter) => {
-          content += `\n--- Document: ${chapter.title} ---\n${chapter.content}\n`;
-        });
-      }
-    }
-
-    setStudyContent(content);
+   const { messages, isLoading, sendMessage, clearMessages } = useChat({
+     mode: "chat",
+     studyContent,
+   });
+ 
+   const handleVideoAdded = async () => {
+     await fetchStudyContent();
   };
 
   const handlePDFUploaded = async (chapterId, pdfContent) => {
