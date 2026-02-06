@@ -105,9 +105,9 @@ export default function Chat() {
       setStudyContent(content);
    }, [user]);
 
-   useEffect(() => {
-     fetchStudyContent();
-  }, [user]);
+  useEffect(() => {
+    fetchStudyContent();
+  }, [fetchStudyContent]);
 
 
   const { messages, isLoading, sendMessage, clearMessages } = useChat({
