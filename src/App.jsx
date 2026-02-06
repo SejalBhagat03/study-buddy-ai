@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +15,8 @@ import Quiz from "./pages/Quiz";
 import Notes from "./pages/Notes";
 import Flashcards from "./pages/Flashcards";
 import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -105,23 +108,41 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ThemeProvider defaultTheme="light" storageKey="studymate-theme">
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
