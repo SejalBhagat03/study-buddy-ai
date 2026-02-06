@@ -110,16 +110,16 @@ export default function Chat() {
   }, [user]);
 
 
+  const { messages, isLoading, sendMessage, clearMessages } = useChat({
+    mode: "chat",
+    studyContent,
+  });
+
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-   const { messages, isLoading, sendMessage, clearMessages } = useChat({
-     mode: "chat",
-     studyContent,
-   });
  
    const handleVideoAdded = async () => {
      await fetchStudyContent();
