@@ -140,15 +140,19 @@
            )}
          </div>
  
-         <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
-           <Button
-             variant="ghost"
-             size={isCollapsed ? "icon" : "sm"}
-             className={cn("flex-1 text-muted-foreground hover:text-foreground", isCollapsed && "w-full")}
-           >
-             <Settings className="w-4 h-4" />
-             {!isCollapsed && <span className="ml-2">Settings</span>}
-           </Button>
+        <div className={cn("flex gap-2", isCollapsed && "flex-col")}>
+            <Button
+              variant="ghost"
+              size={isCollapsed ? "icon" : "sm"}
+              onClick={() => {
+                navigate("/settings");
+                setIsMobileOpen(false);
+              }}
+              className={cn("flex-1 text-muted-foreground hover:text-foreground", isCollapsed && "w-full")}
+            >
+              <Settings className="w-4 h-4" />
+              {!isCollapsed && <span className="ml-2">Settings</span>}
+            </Button>
            <Button
              variant="ghost"
              size={isCollapsed ? "icon" : "sm"}
