@@ -1,12 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export function useChat(options = {}) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Use a ref to always have the latest studyContent
-  const studyContentRef = { current: options.studyContent || "" };
-  studyContentRef.current = options.studyContent || "";
+  // Keep the latest studyContent without forcing sendMessage to rememoize
+  const studyContentRef = useRef(options.studyContent || "");
+  useEffect(() => {
+    studyContentRef.current = options.studyContent || "";
+  }, [options.studyContent]);
 
   const sendMessage = useCallback(async (content) => {
     const userMessage = {
