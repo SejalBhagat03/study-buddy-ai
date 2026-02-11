@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
 const AuthContext = createContext(undefined);
-
 // Helper to clear invalid auth state
 const clearInvalidSession = () => {
   // Clear all Supabase auth related items from localStorage
