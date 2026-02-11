@@ -13,7 +13,6 @@ const clearInvalidSession = () => {
   }
   keysToRemove.forEach(key => localStorage.removeItem(key));
 };
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
