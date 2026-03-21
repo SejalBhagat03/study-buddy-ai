@@ -1,8 +1,20 @@
 {
   "name": "vite_react_shadcn_ts",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "description": "12\r main",
+  "homepage": "https://github.com/SejalBhagat03/study-buddy-ai#readme",
+  "bugs": {
+    "url": "https://github.com/SejalBhagat03/study-buddy-ai/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SejalBhagat03/study-buddy-ai.git"
+  },
+  "license": "ISC",
+  "author": "",
   "type": "module",
+  "main": "eslint.config.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
