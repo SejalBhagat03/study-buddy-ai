@@ -1,0 +1,5 @@
+Background: #f3f4f8 -> 228 26% 96%
+Primary: #a18cd1 -> 258 43% 68%
+Secondary: #fbc2eb -> 317 88% 87%
+Accent: #84fab0 -> 142 92% 75%
+Text: #2d2d2d -> 0 0% 18%
