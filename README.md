@@ -49,7 +49,7 @@ npm run dev
 
 Fill layout pointers locally:
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://study-buddy-ai-s5ns.onrender.com
 ```
 
 **Boot viewports**:
