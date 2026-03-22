@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://study-buddy-ai-s5ns.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://study-buddy-ai-s5ns.onrender.com/api';
 
 const api = axios.create({
     baseURL: API_URL,
