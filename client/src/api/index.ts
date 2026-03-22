@@ -2,8 +2,11 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://study-buddy-ai-s5ns.onrender.com/api';
 
+// Fail-safe: Ensure baseURL ends with '/api'
+const finalBaseURL = API_URL.endsWith('/api') ? API_URL : `${API_URL}/api`;
+
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: finalBaseURL,
     headers: {
         'Content-Type': 'application/json',
     },
