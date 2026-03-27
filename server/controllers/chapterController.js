@@ -1,7 +1,6 @@
 const { getChaptersByUserId, createChapter } = require('../services/chapterService');
 const asyncHandler = require('../utils/asyncHandler');
 const formatResponse = require('../utils/formatResponse');
-
 // @desc    Get all chapters
 // @route   GET /api/chapters
 // @access  Private
