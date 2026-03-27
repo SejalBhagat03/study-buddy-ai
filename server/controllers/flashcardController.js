@@ -1,7 +1,6 @@
 const { getFlashcardsByUserId, createFlashcard } = require('../services/flashcardService');
 const asyncHandler = require('../utils/asyncHandler');
 const formatResponse = require('../utils/formatResponse');
-
 const { generateFlashcardsFromAI } = require('../services/aiService');
 
 // @desc    Get all flashcards
