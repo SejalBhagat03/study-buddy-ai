@@ -2,7 +2,6 @@ const { getFlashcardsByUserId, createFlashcard } = require('../services/flashcar
 const asyncHandler = require('../utils/asyncHandler');
 const formatResponse = require('../utils/formatResponse');
 const { generateFlashcardsFromAI } = require('../services/aiService');
-
 // @desc    Get all flashcards
 // @route   GET /api/flashcards
 // @access  Private
