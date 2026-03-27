@@ -16,7 +16,6 @@ const addChapter = asyncHandler(async (req, res, next) => {
     const data = await createChapter(req.user._id, req.body);
     res.status(201).json(formatResponse(true, 'Chapter created successfully', data));
 });
-
 module.exports = {
     getChapters,
     addChapter
