@@ -8,7 +8,6 @@ const getChapters = asyncHandler(async (req, res, next) => {
     const data = await getChaptersByUserId(req.user._id);
     res.status(200).json(formatResponse(true, 'Chapters fetched successfully', data));
 });
-
 // @desc    Create a chapter
 // @route   POST /api/chapters
 // @access  Private
