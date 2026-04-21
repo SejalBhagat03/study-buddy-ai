@@ -10,14 +10,12 @@ const validate = (req, res, next) => {
     }
     next();
 };
-
 const registerValidation = [
     body('name', 'Name is required').notEmpty().trim(),
     body('email', 'Please include a valid email').isEmail().normalizeEmail(),
     body('password', 'Password must be 6 or more characters').isLength({ min: 6 }),
     validate
 ];
-
 const loginValidation = [
     body('email', 'Please include a valid email').isEmail().normalizeEmail(),
     body('password', 'Password is required').exists(),
